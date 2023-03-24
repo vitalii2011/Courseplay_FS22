@@ -180,6 +180,8 @@ Für eine komplette Changelog, schaut bitte auf unsere <a href="https://github.c
 		<sourceFile filename="scripts/silo/BunkerSiloVehicleController.lua"/>
 		<sourceFile filename="scripts/silo/BunkerSiloWrapper.lua"/>
 		<sourceFile filename="scripts/silo/BunkerSiloManager.lua"/>
+		<sourceFile filename="scripts/trigger/TriggerWrapper.lua"/>
+		<sourceFile filename="scripts/trigger/TriggerManager.lua"/>
 		<sourceFile filename="scripts/pathfinder/BinaryHeap.lua"/>
 		<sourceFile filename="scripts/pathfinder/State3D.lua"/>
 		<sourceFile filename="scripts/pathfinder/AnalyticSolution.lua"/>
@@ -326,6 +328,7 @@ Für eine komplette Changelog, schaut bitte auf unsere <a href="https://github.c
 		<specialization name="cpGamePadHud" className="CpGamePadHud" filename="scripts/specializations/CpGamePadHud.lua"/>
 		<specialization name="cpHud" className="CpHud" filename="scripts/specializations/CpHud.lua"/>
 		<specialization name="cpInfoTexts" className="CpInfoTexts" filename="scripts/specializations/CpInfoTexts.lua"/>
+		<specialization name="cpShovelPositions" className="CpShovelPositions" filename="scripts/specializations/CpShovelPositions.lua"/>
 	</specializations>
 
 	<inputBinding>
