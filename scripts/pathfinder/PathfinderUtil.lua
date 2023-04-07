@@ -645,8 +645,21 @@ function PathfinderUtil.initializeTrailerHeading(start, vehicleData)
     end
 end
 
----@param start State3D
+---@param vehicle table
 ---@param goal State3D
+---@param allowReverse boolean
+---@param fieldNum number|nil
+---@param vehiclesToIgnore table|nil
+---@param objectsToIgnore table|nil
+---@param maxFruitPercent number|nil
+---@param offFieldPenalty number|nil
+---@param areaToAvoid PathfinderUtil.Area|nil
+---@param mustBeAccurate boolean|nil
+---@param areaToIgnoreFruit PathfinderUtil.Area|nil
+---@return PathfinderInterface pathfinder
+---@return boolean done finished pathfinding?
+---@return table|nil path that was found?
+---@return boolean|nil goalNodeInvalid
 function PathfinderUtil.startPathfindingFromVehicleToGoal(vehicle, goal,
                                                           allowReverse, fieldNum,
                                                           vehiclesToIgnore, objectsToIgnore,
@@ -744,7 +757,11 @@ end
 ---@param context PathfinderUtil.Context
 ---@param constraints PathfinderConstraints
 ---@param allowReverse boolean allow reverse driving
----@param mustBeAccurate boolean must be accurately find the goal position/angle (optional)
+---@param mustBeAccurate boolean|nil must be accurately find the goal position/angle (optional)
+---@return PathfinderInterface pathfinder
+---@return boolean done finished pathfinding?
+---@return table|nil path that was found?
+---@return boolean|nil goalNodeInvalid
 function PathfinderUtil.startPathfinding(start, goal, context, constraints, allowReverse, mustBeAccurate)
     PathfinderUtil.overlapBoxes = {}
     local pathfinder = HybridAStarWithAStarInTheMiddle(context.turnRadius * 4, 100, 40000, mustBeAccurate)
@@ -770,6 +787,10 @@ end
 --- in front of the vehicle when it stops working on that row before the turn starts. Negative values mean the
 --- vehicle is towing the implements and is past the end of the row when the implement reaches the end of the row.
 ---@param turnOnField boolean is turn on field allowed?
+---@return PathfinderInterface pathfinder
+---@return boolean done finished pathfinding?
+---@return table|nil path that was found?
+---@return boolean|nil goalNodeInvalid
 function PathfinderUtil.findPathForTurn(vehicle, startOffset, goalReferenceNode, goalOffset, turnRadius, allowReverse,
                                         courseWithHeadland, workingWidth, backMarkerDistance, turnOnField)
     local x, z, yRot = PathfinderUtil.getNodePositionAndDirection(vehicle:getAIDirectionNode(), 0, startOffset or 0)
@@ -820,6 +841,8 @@ end
 ---@param zOffset number offset in meters relative to the goal node (forward positive, backward negative)
 --- Together with the goalReferenceNode defines the goal
 ---@param turnRadius number vehicle turning radius
+---@return table|nil path
+---@return number length
 function PathfinderUtil.findAnalyticPath(solver, vehicleDirectionNode, startOffset, goalReferenceNode,
                                          xOffset, zOffset, turnRadius)
     local x, z, yRot = PathfinderUtil.getNodePositionAndDirection(vehicleDirectionNode, 0, startOffset or 0)
@@ -872,6 +895,10 @@ end
 ---@param offFieldPenalty number penalty to apply to nodes off the field
 ---@param areaToAvoid PathfinderUtil.NodeArea nodes in this area will be penalized so the path will most likely avoid it
 ---@param areaToIgnoreFruit PathfinderUtil.Area area to ignore fruit
+---@return PathfinderInterface pathfinder
+---@return boolean done finished pathfinding?
+---@return table|nil path that was found?
+---@return boolean|nil goalNodeInvalid
 function PathfinderUtil.startPathfindingFromVehicleToWaypoint(vehicle, course, goalWaypointIx,
                                                               xOffset, zOffset, allowReverse,
                                                               fieldNum, vehiclesToIgnore, maxFruitPercent,
@@ -890,13 +917,17 @@ end
 ---@param xOffset number side offset of the goal from the goal node
 ---@param zOffset number length offset of the goal from the goal node
 ---@param allowReverse boolean allow reverse driving
----@param fieldNum number if other than 0 or nil the pathfinding is restricted to the given field and its vicinity
----@param vehiclesToIgnore table[] list of vehicles to ignore for the collision detection (optional)
----@param maxFruitPercent number maximum percentage of fruit present before a node is marked as invalid (optional). If
+---@param fieldNum number|nil if other than 0 or nil the pathfinding is restricted to the given field and its vicinity
+---@param vehiclesToIgnore table[]|nil list of vehicles to ignore for the collision detection (optional)
+---@param maxFruitPercent number|nil maximum percentage of fruit present before a node is marked as invalid (optional). If
 --- nil, will set according to the vehicle setting: 50% when avoid fruit is enabled, math.huge when disabled.
----@param offFieldPenalty number penalty to apply to nodes off the field
----@param areaToAvoid PathfinderUtil.NodeArea nodes in this area will be penalized so the path will most likely avoid it
----@param mustBeAccurate boolean must be accurately find the goal position/angle (optional)
+---@param offFieldPenalty number|nil penalty to apply to nodes off the field
+---@param areaToAvoid PathfinderUtil.NodeArea|nil nodes in this area will be penalized so the path will most likely avoid it
+---@param mustBeAccurate boolean|nil must be accurately find the goal position/angle (optional)
+---@return PathfinderInterface pathfinder
+---@return boolean done finished pathfinding?
+---@return table|nil path that was found?
+---@return boolean|nil goalNodeInvalid
 function PathfinderUtil.startPathfindingFromVehicleToNode(vehicle, goalNode,
                                                           xOffset, zOffset, allowReverse,
                                                           fieldNum, vehiclesToIgnore, maxFruitPercent,
@@ -918,6 +949,10 @@ end
 ---@param fieldNum number if other than 0 or nil the pathfinding is restricted to the given field and its vicinity
 ---@param vehiclesToIgnore table[] list of vehicles to ignore for the collision detection (optional)
 ---@param maxFruitPercent number maximum percentage of fruit present before a node is marked as invalid (optional)
+---@return PathfinderInterface pathfinder
+---@return boolean done finished pathfinding?
+---@return table|nil path that was found?
+---@return boolean|nil goalNodeInvalid
 function PathfinderUtil.startAStarPathfindingFromVehicleToNode(vehicle, goalNode,
                                                                xOffset, zOffset,
                                                                fieldNum, vehiclesToIgnore, maxFruitPercent)
