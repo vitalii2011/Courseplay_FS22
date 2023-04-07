@@ -65,63 +65,91 @@ function CpSilo:init(sx, sz, wx, wz, hx, hz)
 
 end
 
+---@return number sx
+---@return number sz
 function CpSilo:getStartPosition()
 	return self.sx, self.sz	
 end
 
+---@return number wx
+---@return number wz
 function CpSilo:getWidthPosition()
 	return self.wx, self.wz	
 end
 
+---@return number hx
+---@return number hz
 function CpSilo:getHeightPosition()
 	return self.hx, self.hz	
 end
 
+---@return number width
 function CpSilo:getWidth()
 	return self.width	
 end
 
+---@return number length
 function CpSilo:getLength()
 	return self.length
 end
 
+---@return number dirX
+---@return number dirZ
 function CpSilo:getLengthDirection()
 	return self.dirXLength, self.dirZLength
 end
 
+---@return number dirX
+---@return number dirZ
 function CpSilo:getWidthDirection()
 	return self.dirXWidth, self.dirZWidth
 end
 
+---@return number fcx
+---@return number fcz
 function CpSilo:getFrontCenter()
 	local width = self:getWidth()
 	return self.sx + self.dirXWidth * width/2, self.sz + self.dirZWidth * width/2
 end
 
+---@return number bcx
+---@return number bcz
 function CpSilo:getBackCenter()
 	local length = self:getLength()
 	local fcx, fcz = self:getFrontCenter()
 	return fcx + self.dirXLength * length/2, fcz + self.dirZLength * length/2
 end
 
---- Is the point directly in the silo area.
+--- Is the point directly in the silo area?
+---@param x number
+---@param z number
+---@return boolean
 function CpSilo:isPointInSilo(x, z)
 	return self:isPointInArea(x, z, self.area)
 end
 
+---@param node number
+---@return boolean
 function CpSilo:isNodeInSilo(node)
 	local x, _, z = getWorldTranslation(node)
 	return self:isPointInArea(x, z, self.area)
 end
 
+---@param vehicle table
+---@return boolean
 function CpSilo:isVehicleInSilo(vehicle)
 	return self:isNodeInSilo(vehicle.rootNode)
 end
 
+---@param x number
+---@param z number
+---@param area table
+---@return boolean
 function CpSilo:isPointInArea(x, z, area)
 	return CpMathUtil.isPointInPolygon(area, x, z)	
 end
 
+---@return table area
 function CpSilo:getArea()
 	return self.area
 end
@@ -144,6 +172,20 @@ end
 function CpSilo:drawArea(area)
 	local y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, area[1].x, 0, area[1].z) + 2
 	DebugUtil.drawDebugAreaRectangle(area[1].x, y, area[1].z, area[2].x, y, area[2].z, area[4].x, y, area[4].z, false, 1, 0, 0)
+end
+
+---@return number|nil fillType
+function CpSilo:getFillType()
+	return DensityMapHeightUtil.getFillTypeAtArea(self.sx, self.sz, self.wx, self.wx, self.hx, self.hx)
+end
+
+---@return number fillLevel
+function CpSilo:getTotalFillLevel()
+	local fillType = self:getFillType()
+	if fillType and fillType ~= FillType.UNKNOWN then 
+		return DensityMapHeightUtil.getFillLevelAtArea(fillType, self.sx, self.sz, self.wx, self.wx, self.hx, self.hx)
+	end
+	return 0
 end
 
 --- Heap Bunker Silo

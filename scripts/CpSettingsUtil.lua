@@ -138,6 +138,10 @@ end
 ---@param filePath string
 function CpSettingsUtil.loadSettingsFromSetup(class, filePath)
     local xmlFile = XMLFile.load("settingSetupXml", filePath, CpSettingsUtil.setupXmlSchema)
+	if xmlFile == nil or xmlFile == 0 then 
+		CpUtil.error("Setting setup XML File not found!")
+		return
+	end
     class.settings = {}
 	class.settingsBySubTitle = {}
     local uniqueID = 0
@@ -145,19 +149,18 @@ function CpSettingsUtil.loadSettingsFromSetup(class, filePath)
 	local setupKey = xmlFile:getValue("Settings#prefixText")
 	local pageTitle = xmlFile:getValue("Settings#title")
 	if pageTitle then
-		class.pageTitle =  g_i18n:getText(xmlFile:getValue("Settings#title"))
+		class.pageTitle =  CpSettingsUtil.getTranslation(xmlFile:getValue("Settings#title"))
 	else 
-		class.pageTitle = g_i18n:getText(setupKey .. "title")
+		class.pageTitle = CpSettingsUtil.getTranslation(setupKey .. "title")
 	end
 	xmlFile:iterate("Settings.SettingSubTitle", function (i, masterKey)
-		local subTitle = xmlFile:getValue(masterKey.."#title")
+		local subTitleKey = xmlFile:getValue(masterKey.."#title")
 		--- This flag can by used to simplify the translation text. 
 		local pre = xmlFile:getValue(masterKey.."#prefix", true)	
 		if pre then 
-			subTitle = g_i18n:getText(setupKey.."subTitle_"..subTitle)
-		else 
-			subTitle = g_i18n:getText(subTitle)
+			subTitleKey = setupKey.."subTitle_"..subTitleKey
 		end
+		local subTitle = CpSettingsUtil.getTranslation(subTitleKey)
 
 		local isDisabledFunc = xmlFile:getValue(masterKey.."#isDisabled")
 		local isVisibleFunc = xmlFile:getValue(masterKey.."#isVisible")
@@ -176,18 +179,16 @@ function CpSettingsUtil.loadSettingsFromSetup(class, filePath)
 			settingParameters.autoUpdateGui = autoUpdateGui
 			settingParameters.classType = xmlFile:getValue(baseKey.."#classType")
 			settingParameters.name = xmlFile:getValue(baseKey.."#name")
-			local title = xmlFile:getValue(baseKey.."#title")
-			if title then
-				settingParameters.title = g_i18n:getText(title)
-			else 
-				settingParameters.title = g_i18n:getText(setupKey..settingParameters.name.."_title")
+			local titleKey = xmlFile:getValue(baseKey.."#title")
+			if not titleKey then
+				titleKey = setupKey..settingParameters.name.."_title"
 			end
-			local tooltip = xmlFile:getValue(baseKey.."#tooltip")
-			if tooltip then
-				settingParameters.tooltip = g_i18n:getText(tooltip)
-			else 
-				settingParameters.tooltip = g_i18n:getText(setupKey..settingParameters.name.."_tooltip")
+			settingParameters.title = CpSettingsUtil.getTranslation(titleKey)
+			local tooltipKey = xmlFile:getValue(baseKey.."#tooltip")
+			if not tooltipKey then
+				tooltipKey = setupKey..settingParameters.name.."_tooltip"
 			end
+			settingParameters.tooltip = CpSettingsUtil.getTranslation(tooltipKey)
 			settingParameters.default = xmlFile:getValue(baseKey.."#default")
 			settingParameters.defaultBool = xmlFile:getValue(baseKey.."#defaultBool")
 			settingParameters.textInputAllowed = xmlFile:getValue(baseKey.."#textInput", false)
@@ -251,6 +252,18 @@ function CpSettingsUtil.loadSettingsFromSetup(class, filePath)
 	end)
 	xmlFile:delete()
 end
+
+--- Gets the translations, only if it's available.
+---@param key string
+---@return string
+function CpSettingsUtil.getTranslation(key)
+	if g_i18n:hasText(key) then 
+		return g_i18n:getText(key)
+	else 
+		return "TODO"
+	end
+end
+
 
 --- Clones a settings table.
 ---@param class table 

@@ -98,7 +98,7 @@ function CpAIBunkerSiloWorker:getCanStartCpBunkerSiloWorker()
 	return not self:getCanStartCpFieldWork() 
         and not self:getCanStartCpBaleFinder() 
         and not self:getCanStartCpCombineUnloader()
-        and not self:getCanStartCpSiloLoaderWorker()
+        and not (AIUtil.hasChildVehicleWithSpecialization(self, Shovel) and AIUtil.hasChildVehicleWithSpecialization(self, ConveyorBelt))
         and (not self:hasCpCourse() or AIUtil.hasChildVehicleWithSpecialization(self, Leveler, nil))
 end
 
