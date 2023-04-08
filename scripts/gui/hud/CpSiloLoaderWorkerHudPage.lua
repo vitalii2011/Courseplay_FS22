@@ -45,3 +45,11 @@ function CpSiloLoaderWorkerHudPageElement:updateContent(vehicle, status)
 
     CpGuiUtil.updateCopyBtn(self, vehicle, status)
 end
+
+function CpSiloLoaderWorkerHudPageElement:isStartingPointBtnDisabled(vehicle)
+    return AIUtil.hasAIImplementWithSpecialization(vehicle, ConveyorBelt)
+end
+
+function CpSiloLoaderWorkerHudPageElement:getStartingPointBtnText(vehicle)
+    return vehicle:getCpStartingPointSetting():getString()
+end

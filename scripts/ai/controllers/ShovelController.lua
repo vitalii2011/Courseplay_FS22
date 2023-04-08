@@ -94,9 +94,10 @@ end
 ---@param pos number shovel position 1-4
 ---@return boolean reached? 
 function ShovelController:moveShovelToPosition(pos)
-    return true
+    self.implement:cpSetShovelState(pos)
+    return self.implement:areCpShovelPositionsDirty()
 end
 
 function ShovelController:deactivateShovelPositions()
-    
+    self.implement:cpSetShovelState(self.POSITIONS.DEACTIVATED)
 end

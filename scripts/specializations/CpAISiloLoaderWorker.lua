@@ -108,12 +108,18 @@ end
 
 function CpAISiloLoaderWorker:getCpStartableJob(superFunc, isStartedByHud)
     local spec = self.spec_cpAISiloLoaderWorker
-
-    local job = self:getCanStartCpSiloLoaderWorker() and spec.cpJob
-    if isStartedByHud and not AIUtil.hasChildVehicleWithSpecialization(self, ConveyorBelt) then 
-        job = self:getCpStartingPointSetting():getValue() == CpJobParameters.START_AT_SILO_LOADING and job
+    if AIUtil.hasChildVehicleWithSpecialization(self, ConveyorBelt) then 
+        return superFunc(self, isStartedByHud) or self:getCanStartCpSiloLoaderWorker() and spec.cpJob
+    elseif isStartedByHud then
+        print("Raw test")
+        if self:getCanStartCpSiloLoaderWorker() 
+            and self:getCpStartingPointSetting():getValue() == CpJobParameters.START_AT_SILO_LOADING then
+                print("Test")
+            return superFunc(self, isStartedByHud) or spec.cpJob
+        end
+        
     end
-	return superFunc(self) or job
+	return superFunc(self, isStartedByHud)
 end
 
 function CpAISiloLoaderWorker:getCpStartText(superFunc)
@@ -184,10 +190,10 @@ function CpAISiloLoaderWorker:startCpSiloLoaderWorker(jobParameters, bunkerSilo,
             CpUtil.debugVehicle(CpDebug.DBG_SILO, self, "Starting a shovel silo loader strategy.")
             strategy = AIDriveStrategyShovelSiloLoader.new()
         end
-       -- this also starts the strategy
-       strategy:setSiloAndHeap(bunkerSilo, heap)
-       strategy:setAIVehicle(self, jobParameters)
-       self:startCpWithStrategy(strategy)
+        -- this also starts the strategy
+        strategy:setSiloAndHeap(bunkerSilo, heap)
+        strategy:setAIVehicle(self, jobParameters)
+        self:startCpWithStrategy(strategy)
     end
 end
 

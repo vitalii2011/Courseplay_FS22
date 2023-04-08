@@ -316,16 +316,16 @@ function CpSiloLoaderJobParameters.getSettings(vehicle)
     return vehicle.spec_cpAISiloLoaderWorker.cpJob:getCpJobParameters()
 end
 
-function CpSiloLoaderJobParameters:isShovelMode()
+function CpSiloLoaderJobParameters:isShovelSiloLoadDisabled()
     local vehicle = self.job:getVehicle()
     if vehicle then 
-        return not AIUtil.hasChildVehicleWithSpecialization(vehicle, ConveyorBelt)
+        return AIUtil.hasChildVehicleWithSpecialization(vehicle, ConveyorBelt)
     end
     return false
 end
 
 function CpSiloLoaderJobParameters:isUnloadPositionDisabled()
-    return not self:isShovelMode() or self.unloadAt == CpSiloLoaderJobParameters.UNLOAD_TRAILER
+    return self:isShovelSiloLoadDisabled() or self.unloadAt == CpSiloLoaderJobParameters.UNLOAD_TRAILER
 end
 
 function CpSiloLoaderJobParameters:isUnloadStationDisabled()

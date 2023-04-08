@@ -88,6 +88,7 @@ function CpShovelPositions.registerEventListeners(vehicleType)
 	SpecializationUtil.registerEventListener(vehicleType, "onLoad", CpShovelPositions)
 	SpecializationUtil.registerEventListener(vehicleType, "onDraw", CpShovelPositions)	
 	SpecializationUtil.registerEventListener(vehicleType, "onUpdateTick", CpShovelPositions)
+	SpecializationUtil.registerEventListener(vehicleType, "onPostAttach")
 end
 
 function CpShovelPositions.registerFunctions(vehicleType)
@@ -109,6 +110,11 @@ function CpShovelPositions:onLoad(savegame)
     local spec = self.spec_cpShovelPositions
 	--- Current shovel state.
 	spec.state = CpShovelPositions.DEACTIVATED
+	spec.isDirty = false
+end
+
+function CpShovelPositions:onPostAttach()
+	CpShovelPositions.cpSetupShovelPositions(self)
 end
 
 function CpShovelPositions:onDraw()
@@ -144,13 +150,13 @@ end
 
 --- Changes the current shovel state position.
 function CpShovelPositions:cpSetShovelState(state)
-	CpUtil.infoImplement(self, "Changed shovelPositionState to %d.", state)
 	local spec = self.spec_cpShovelPositions
-	spec.state = state
-	CpShovelPositions.cpSetupShovelPositions(self)
-	if state == CpShovelPositions.DEACTIVATED then 
-		ImplementUtil.stopMovingTool(spec.armVehicle, spec.armTool)
-		ImplementUtil.stopMovingTool(spec.shovelVehicle, spec.shovelTool)
+	if spec.state ~= state then
+		spec.state = state
+		if state == CpShovelPositions.DEACTIVATED then 
+			ImplementUtil.stopMovingTool(spec.armVehicle, spec.armTool)
+			ImplementUtil.stopMovingTool(spec.shovelVehicle, spec.shovelTool)
+		end
 	end
 end
 
@@ -327,7 +333,7 @@ function CpShovelPositions:updateLoadingPosition(dt)
 		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, CpShovelPositions.LOADING_POSITION.ARM_LIMITS)
 		isDirty = isDirtyArm or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.LOADING_POSITION.SHOVEL_LIMITS)
 	end
-	self.isDirty = isDirty
+	spec.isDirty = isDirty
 end
 
 function CpShovelPositions:updateTransportPosition(dt)
@@ -338,7 +344,7 @@ function CpShovelPositions:updateTransportPosition(dt)
 		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, CpShovelPositions.TRANSPORT_POSITION.ARM_LIMITS)
 		isDirty = isDirtyArm or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.TRANSPORT_POSITION.SHOVEL_LIMITS)
 	end
-	self.isDirty = isDirty
+	spec.isDirty = isDirty
 end
 
 function CpShovelPositions:updatePreUnloadPosition(dt)
@@ -350,7 +356,7 @@ function CpShovelPositions:updatePreUnloadPosition(dt)
 		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, self:getCpShovelUnloadingPositionHeight())
 		isDirty = isDirtyArm or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.PRE_UNLOAD_POSITION.SHOVEL_LIMITS)
 	end
-	self.isDirty = isDirty
+	spec.isDirty = isDirty
 end
 
 function CpShovelPositions:updateUnloadingPosition(dt)
@@ -363,7 +369,7 @@ function CpShovelPositions:updateUnloadingPosition(dt)
 		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, self:getCpShovelUnloadingPositionHeight())
 		isDirty = isDirtyArm or  CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, {math.deg(maxAngle), math.deg(maxAngle) + 1})
 	end
-	self.isDirty = isDirty
+	spec.isDirty = isDirty
 end
 
 function CpShovelPositions:getCpShovelUnloadingPositionHeight()

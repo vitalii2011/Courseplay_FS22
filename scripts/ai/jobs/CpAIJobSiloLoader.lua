@@ -35,6 +35,7 @@ function CpAIJobSiloLoader:setupJobParameters()
 	CpAIJobSiloLoader:superClass().setupJobParameters(self)
 	self:setupCpJobParameters(CpSiloLoaderJobParameters(self))
 	self.cpJobParameters.loadPosition:setSnappingAngle(math.pi/8) -- AI menu snapping angle of 22.5 degree.
+	self.cpJobParameters.unloadPosition:setSnappingAngle(math.pi/8) -- AI menu snapping angle of 22.5 degree.
 end
 
 function CpAIJobSiloLoader:getIsAvailableForVehicle(vehicle)
@@ -59,10 +60,18 @@ function CpAIJobSiloLoader:applyCurrentState(vehicle, mission, farmId, isDirectS
 
 	local x, z = self.cpJobParameters.loadPosition:getPosition()
 
-	-- no field position from the previous job, use the vehicle's current position
+	-- no load position use the vehicle's current position
 	if x == nil or z == nil then
 		x, _, z = getWorldTranslation(vehicle.rootNode)
 		self.cpJobParameters.loadPosition:setPosition(x, z)
+	end
+
+	local x, z = self.cpJobParameters.unloadPosition:getPosition()
+
+	-- no unload position use the vehicle's current position
+	if x == nil or z == nil then
+		x, _, z = getWorldTranslation(vehicle.rootNode)
+		self.cpJobParameters.unloadPosition:setPosition(x, z)
 	end
 end
 

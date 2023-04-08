@@ -1,6 +1,6 @@
 --[[
 This file is part of Courseplay (https://github.com/Courseplay/courseplay)
-Copyright (C) 2022 Peter Vaiko
+Copyright (C) 2022 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ---@field shovelController ShovelController
 AIDriveStrategyShovelSiloLoader = {}
 local AIDriveStrategyShovelSiloLoader_mt = Class(AIDriveStrategyShovelSiloLoader, AIDriveStrategyCourse)
-
 
 ----------------------------------------------------------------
 --- State properties

@@ -211,6 +211,7 @@ Für eine komplette Changelog, schaut bitte auf unsere <a href="https://github.c
 		<sourceFile filename="scripts/ai/AIDriveStrategyVineFieldWorkCourse.lua"/>
 		<sourceFile filename="scripts/ai/AIDriveStrategyBunkerSilo.lua"/>
 		<sourceFile filename="scripts/ai/AIDriveStrategySiloLoader.lua"/>
+		<sourceFile filename="scripts/ai/AIDriveStrategyShovelSiloLoader.lua"/>
 		<sourceFile filename="scripts/ai/AIMessages.lua"/>
 		<sourceFile filename="scripts/ai/Markers.lua"/>
 		<sourceFile filename="scripts/ai/ProximitySensor.lua"/>
