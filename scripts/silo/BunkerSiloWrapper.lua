@@ -401,6 +401,14 @@ function CpBunkerSilo:getNode()
 	return self.silo.interactionTriggerNode	
 end
 
+function CpBunkerSilo:getFillType()
+	return self.silo.outputFillType
+end
+
+function CpBunkerSilo:getTotalFillLevel()
+	return self.silo.fillLevel
+end
+
 function CpBunkerSilo:delete()
 	for _, controller in pairs(self.controllers) do 
 		controller:setBunkerSiloInvalid()

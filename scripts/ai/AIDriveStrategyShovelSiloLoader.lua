@@ -78,6 +78,10 @@ end
 
 function AIDriveStrategyShovelSiloLoader:startWithoutCourse(jobParameters)
  
+    -- to always have a valid course (for the traffic conflict detector mainly)
+    self.course = Course.createStraightForwardCourse(self.vehicle, 25)
+    self:startCourse(self.course, 1)
+
     self.jobParameters = jobParameters
 
     if self.bunkerSilo ~= nil then 
@@ -250,6 +254,7 @@ end
 ---@param course table heap course
 function AIDriveStrategyShovelSiloLoader:startPathfindingToStart(course)
     if not self.pathfinder or not self.pathfinder:isActive() then
+        self.state = self.states.WAITING_FOR_PATHFINDER
         self:rememberCourse(course, 1)
 
         self.pathfindingStartedAt = g_currentMission.time

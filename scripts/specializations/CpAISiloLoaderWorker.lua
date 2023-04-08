@@ -111,10 +111,8 @@ function CpAISiloLoaderWorker:getCpStartableJob(superFunc, isStartedByHud)
     if AIUtil.hasChildVehicleWithSpecialization(self, ConveyorBelt) then 
         return superFunc(self, isStartedByHud) or self:getCanStartCpSiloLoaderWorker() and spec.cpJob
     elseif isStartedByHud then
-        print("Raw test")
         if self:getCanStartCpSiloLoaderWorker() 
             and self:getCpStartingPointSetting():getValue() == CpJobParameters.START_AT_SILO_LOADING then
-                print("Test")
             return superFunc(self, isStartedByHud) or spec.cpJob
         end
         
@@ -190,7 +188,6 @@ function CpAISiloLoaderWorker:startCpSiloLoaderWorker(jobParameters, bunkerSilo,
             CpUtil.debugVehicle(CpDebug.DBG_SILO, self, "Starting a shovel silo loader strategy.")
             strategy = AIDriveStrategyShovelSiloLoader.new()
         end
-        -- this also starts the strategy
         strategy:setSiloAndHeap(bunkerSilo, heap)
         strategy:setAIVehicle(self, jobParameters)
         self:startCpWithStrategy(strategy)

@@ -88,7 +88,7 @@ function ShovelController:moveShovelToUnloadPosition()
 end
 
 function ShovelController:onFinished()
-    self:deactivateShovelPositions()
+    self.implement:cpResetShovelState()
 end
 
 ---@param pos number shovel position 1-4
@@ -96,8 +96,4 @@ end
 function ShovelController:moveShovelToPosition(pos)
     self.implement:cpSetShovelState(pos)
     return self.implement:areCpShovelPositionsDirty()
-end
-
-function ShovelController:deactivateShovelPositions()
-    self.implement:cpSetShovelState(self.POSITIONS.DEACTIVATED)
 end

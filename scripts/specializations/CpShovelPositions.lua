@@ -88,7 +88,7 @@ function CpShovelPositions.registerEventListeners(vehicleType)
 	SpecializationUtil.registerEventListener(vehicleType, "onLoad", CpShovelPositions)
 	SpecializationUtil.registerEventListener(vehicleType, "onDraw", CpShovelPositions)	
 	SpecializationUtil.registerEventListener(vehicleType, "onUpdateTick", CpShovelPositions)
-	SpecializationUtil.registerEventListener(vehicleType, "onPostAttach")
+	SpecializationUtil.registerEventListener(vehicleType, "onPostAttach", CpShovelPositions)
 end
 
 function CpShovelPositions.registerFunctions(vehicleType)
@@ -114,7 +114,9 @@ function CpShovelPositions:onLoad(savegame)
 end
 
 function CpShovelPositions:onPostAttach()
-	CpShovelPositions.cpSetupShovelPositions(self)
+	if self.spec_cpShovelPositions then
+		CpShovelPositions.cpSetupShovelPositions(self)
+	end
 end
 
 function CpShovelPositions:onDraw()
@@ -296,7 +298,9 @@ function CpShovelPositions.setArmPosition(dt, spec, shovel, shovelNode, limits)
 
 	local ax, _, az = getWorldTranslation(spec.armTool.node)
 	local sx, sy, sz = getWorldTranslation(spec.shovelTool.node)
-	local _, py, _ = localToWorld(spec.armVehicle.rootNode, 0, nodeDiff, 0)
+	local attacherJointNode = shovel.spec_attachable.attacherJoint.node
+	local _, shovelY, _ = localToLocal(attacherJointNode, shovelNode, 0, 0, 0)
+	local _, py, _ = localToWorld(spec.armVehicle.rootNode, 0, nodeDiff + shovelY, 0)
 	local px, pz = sx, sz
 
 	setWorldTranslation(spec.armProjectionNode, px, py, pz)
