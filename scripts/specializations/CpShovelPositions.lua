@@ -21,12 +21,12 @@ CpShovelPositions = {
 	NUM_STATES = 4,
 	LOADING_POSITION = {
 		ARM_LIMITS = {
-			0.1,
-			0.20
+			0,
+			0.1
 		},
 		SHOVEL_LIMITS = {
-			92,
-			94
+			88,
+			92
 		},
 	},
 	TRANSPORT_POSITION = {
@@ -35,8 +35,8 @@ CpShovelPositions = {
 			0.20
 		},
 		SHOVEL_LIMITS = {
-			54,
-			56
+			53,
+			57
 		},
 	},
 	PRE_UNLOAD_POSITION = {
@@ -45,8 +45,8 @@ CpShovelPositions = {
 			4
 		},
 		SHOVEL_LIMITS = {
-			44,
-			46
+			43,
+			47
 		},
 	},
 	UNLOADING_POSITION = {
@@ -55,10 +55,7 @@ CpShovelPositions = {
 			5
 		},
 	},
-	RAYCAST_DISTANCE = 10,
-	MAX_RAYCAST_OFFSET = 6,
-	RAYCAST_OFFSET_HEIGHT = 8,
-	DEBUG = true
+	DEBUG = false
 }
 CpShovelPositions.MOD_NAME = g_currentModName
 CpShovelPositions.NAME = ".cpShovelPositions"
@@ -97,10 +94,6 @@ function CpShovelPositions.registerFunctions(vehicleType)
 	SpecializationUtil.registerFunction(vehicleType, "cpSetupShovelPositions", CpShovelPositions.cpSetupShovelPositions)
 	SpecializationUtil.registerFunction(vehicleType, "areCpShovelPositionsDirty", CpShovelPositions.areCpShovelPositionsDirty)
 	SpecializationUtil.registerFunction(vehicleType, "getCpShovelUnloadingPositionHeight", CpShovelPositions.getCpShovelUnloadingPositionHeight)
-	SpecializationUtil.registerFunction(vehicleType, "isCpShovelUnloadingRaycastAllowed", CpShovelPositions.isCpShovelUnloadingRaycastAllowed)
-	SpecializationUtil.registerFunction(vehicleType, "cpSearchForShovelUnloadingObjectRaycast", CpShovelPositions.cpSearchForShovelUnloadingObjectRaycast)
-	SpecializationUtil.registerFunction(vehicleType, "cpShovelUnloadingRaycastCallback", CpShovelPositions.cpShovelUnloadingRaycastCallback)
-	
 end
 
 
@@ -164,7 +157,7 @@ end
 
 --- Deactivates the shovel position control.
 function CpShovelPositions:cpResetShovelState()
-	CpUtil.infoImplement(self, "Reset shovelPositionState.")
+	CpShovelPositions.debug(self, "Reset shovelPositionState.")
 	local spec = self.spec_cpShovelPositions
 	spec.state = CpShovelPositions.DEACTIVATED
 	ImplementUtil.stopMovingTool(spec.armVehicle, spec.armTool)
@@ -248,11 +241,12 @@ function CpShovelPositions.setShovelPosition(dt, spec, shovel, shovelNode, angle
 	local tx, _, tz = getWorldTranslation(spec.shovelTool.node)
 	local px, py, pz = localToWorld(spec.shovelProjectionNode, 0, 0, radius)
 	
-	DebugUtil.drawDebugCircleAtNode(spec.shovelTool.node, radius, 30, nil, true)
+	if CpShovelPositions.DEBUG then
+		DebugUtil.drawDebugCircleAtNode(spec.shovelTool.node, radius, 30, nil, true)
 
-	DebugUtil.drawDebugLine(px, py, pz, sx, sy, sz)
-	DebugUtil.drawDebugLine(px, py, pz, tx, py, tz)
-	
+		DebugUtil.drawDebugLine(px, py, pz, sx, sy, sz)
+		DebugUtil.drawDebugLine(px, py, pz, tx, py, tz)
+	end
 
 	local yRot = math.atan2(MathUtil.vector3Length(px - sx, py - sy, pz - sz),
 	MathUtil.vector3Length(px - tx, py - py, pz - tz))
@@ -264,9 +258,9 @@ function CpShovelPositions.setShovelPosition(dt, spec, shovel, shovelNode, angle
 		dyRot = yRot
 	end
 	
-	CpUtil.infoImplement(shovel, 
+	CpShovelPositions.debug(shovel, 
 		"Shovel position(%d) angle: %.2f, targetAngle: %.2f, yRot: %.2f, oldRot: %.2f", 
-		spec.state, math.deg(angle), math.deg(targetAngle), math.deg(yRot), math.deg(oldRot)) 
+		spec.state, math.deg(angle), math.deg(targetAngle), math.deg(dyRot), math.deg(oldRot)) 
 
 	return ImplementUtil.moveMovingToolToRotation(spec.shovelVehicle, spec.shovelTool, dt, 
 		MathUtil.clamp(oldRot + dyRot , spec.shovelTool.rotMin, spec.shovelTool.rotMax))
@@ -276,13 +270,20 @@ end
 function CpShovelPositions.setArmPosition(dt, spec, shovel, shovelNode, limits)
 	--- Interval in which the shovel height should be in.
 	local min, max = unpack(limits)
-	local x, y, z = getWorldTranslation(spec.shovelTool.node)
-	local dy = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, x, 0, z)
-	local height = y - dy 
 	local targetHeight = min + (max - min)/2
-	local diff = height - (min + (max - min)/2)
 	
-	if height < max and height > min then 
+	local attacherJointNode = shovel.spec_attachable.attacherJoint.node
+	local _, shovelY, shovelR = localToLocal(attacherJointNode, shovelNode, 0, 0, 0)
+	
+	local x, y, z = getWorldTranslation(attacherJointNode)
+	local dy = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, x, 0, z)
+	
+	local targetAttacherHeight = dy + shovelY + targetHeight 
+	local diff = targetAttacherHeight - y
+
+	CpShovelPositions.debug(shovel, "shovel => y: %.2f, z: %.2f, targetAttacherHeight: %.2f", shovelY, shovelR, targetAttacherHeight)
+
+	if math.abs(diff) < (max - min)/2 then 
 		ImplementUtil.stopMovingTool(spec.armVehicle, spec.armTool)
 		return false
 	end
@@ -290,38 +291,36 @@ function CpShovelPositions.setArmPosition(dt, spec, shovel, shovelNode, limits)
 	local curRot = {}
 	curRot[1], curRot[2], curRot[3] = getRotation(spec.armTool.node)
 	local oldRot = curRot[spec.armTool.rotationAxis]
-	local radius = calcDistanceFrom(spec.armTool.node, spec.shovelTool.node)
+	
+
+	setWorldTranslation(spec.armProjectionNode, x, targetAttacherHeight, z)
+
 
 	local _, ay, _ = localToLocal(spec.armTool.node, spec.armVehicle.rootNode, 0, 0, 0)
 
-	local nodeDiff = MathUtil.clamp( targetHeight - ay , -radius, radius) + ay
+	local nodeDiff = MathUtil.clamp( targetHeight - ay , -shovelR, shovelR) + ay
 
 	local ax, _, az = getWorldTranslation(spec.armTool.node)
 	local sx, sy, sz = getWorldTranslation(spec.shovelTool.node)
-	local attacherJointNode = shovel.spec_attachable.attacherJoint.node
-	local _, shovelY, _ = localToLocal(attacherJointNode, shovelNode, 0, 0, 0)
-	local _, py, _ = localToWorld(spec.armVehicle.rootNode, 0, nodeDiff + shovelY, 0)
-	local px, pz = sx, sz
 
-	setWorldTranslation(spec.armProjectionNode, px, py, pz)
+	if CpShovelPositions.DEBUG then
+		DebugUtil.drawDebugCircleAtNode(spec.armTool.node, shovelR, 30, nil, true)
 
-	DebugUtil.drawDebugCircleAtNode(spec.armTool.node, radius, 30, nil, true)
+		DebugUtil.drawDebugNode(spec.armProjectionNode, "Projection node", false, 0)
 
-	DebugUtil.drawDebugNode(spec.armProjectionNode, "Projection node", false, 0)
+		DebugUtil.drawDebugLine(x, targetAttacherHeight, z, sx, sy, sz)
+		DebugUtil.drawDebugLine(x, targetAttacherHeight, z, ax, targetAttacherHeight, az) -- y
+	end
+	local yRot = math.atan2(MathUtil.vector3Length(x - sx, targetAttacherHeight - sy, z - sz),
+		MathUtil.vector3Length(x - ax, 0, z - az))
 
-	DebugUtil.drawDebugLine(px, py, pz, sx, sy, sz)
-	DebugUtil.drawDebugLine(px, py, pz, ax, py, az) -- y
-	
-	local yRot = math.atan2(MathUtil.vector3Length(px - sx, py - sy, pz - sz),
-		MathUtil.vector3Length(px - ax, py - py, pz - az))
-
-	if height > targetHeight then 
+	if diff < 0 then 
 		yRot = yRot
 	else 
 		yRot = -yRot
 	end
 	
-	CpUtil.infoImplement(shovel, 
+	CpShovelPositions.debug(shovel, 
 		"Arm position(%d) height diff: %.2f, targetHeight: %.2f, old angle: %.2f, yRot: %.2f",
 		spec.state, diff, targetHeight,  math.deg(oldRot),  math.deg(yRot))
 
@@ -334,8 +333,8 @@ function CpShovelPositions:updateLoadingPosition(dt)
 	local angle, shovelNode, maxAngle, minAngle, factor = CpShovelPositions.getShovelData(self)
 	local isDirty
 	if angle then 
-		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, CpShovelPositions.LOADING_POSITION.ARM_LIMITS)
-		isDirty = isDirtyArm or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.LOADING_POSITION.SHOVEL_LIMITS)
+		isDirty = CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.LOADING_POSITION.SHOVEL_LIMITS)
+		isDirty = isDirty or CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, CpShovelPositions.LOADING_POSITION.ARM_LIMITS)
 	end
 	spec.isDirty = isDirty
 end
@@ -345,33 +344,30 @@ function CpShovelPositions:updateTransportPosition(dt)
 	local angle, shovelNode, maxAngle, minAngle, factor = CpShovelPositions.getShovelData(self)
 	local isDirty
 	if angle then 
-		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, CpShovelPositions.TRANSPORT_POSITION.ARM_LIMITS)
-		isDirty = isDirtyArm or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.TRANSPORT_POSITION.SHOVEL_LIMITS)
+		isDirty = CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.TRANSPORT_POSITION.SHOVEL_LIMITS)
+		isDirty = isDirty or CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, CpShovelPositions.TRANSPORT_POSITION.ARM_LIMITS)
 	end
 	spec.isDirty = isDirty
 end
 
 function CpShovelPositions:updatePreUnloadPosition(dt)
-	self:cpSearchForShovelUnloadingObjectRaycast()
 	local spec = self.spec_cpShovelPositions
 	local angle, shovelNode, maxAngle, minAngle, factor = CpShovelPositions.getShovelData(self)
 	local isDirty
 	if angle then 
-		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, self:getCpShovelUnloadingPositionHeight())
-		isDirty = isDirtyArm or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.PRE_UNLOAD_POSITION.SHOVEL_LIMITS)
+		isDirty = CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, CpShovelPositions.PRE_UNLOAD_POSITION.SHOVEL_LIMITS)
+		isDirty = isDirty or CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, self:getCpShovelUnloadingPositionHeight())
 	end
 	spec.isDirty = isDirty
 end
 
 function CpShovelPositions:updateUnloadingPosition(dt)
-	self:cpSearchForShovelUnloadingObjectRaycast()
 	local spec = self.spec_cpShovelPositions
 	local angle, shovelNode, maxAngle, minAngle, factor = CpShovelPositions.getShovelData(self)
 	local isDirty
 	if angle and maxAngle then 
-		
-		local isDirtyArm = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, self:getCpShovelUnloadingPositionHeight())
-		isDirty = isDirtyArm or  CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, {math.deg(maxAngle), math.deg(maxAngle) + 1})
+		isDirty = CpShovelPositions.setArmPosition(dt, spec, self, shovelNode, self:getCpShovelUnloadingPositionHeight())
+		isDirty = isDirty or CpShovelPositions.setShovelPosition(dt, spec, self, shovelNode, angle, {math.deg(maxAngle), math.deg(maxAngle) + 2})
 	end
 	spec.isDirty = isDirty
 end
@@ -384,31 +380,31 @@ end
 function CpShovelPositions:getShovelData()
 	local shovelSpec = self.spec_shovel
 	if shovelSpec == nil then 
-		CpUtil.infoImplement(self, "Shovel spec not found!")
+		CpShovelPositions.debug(self, "Shovel spec not found!")
 		return 
 	end
 	local info = shovelSpec.shovelDischargeInfo
     if info == nil or info.node == nil then 
-		CpUtil.infoImplement(self, "Info or node not found!")
+		CpShovelPositions.debugt(self, "Info or node not found!")
 		return 
 	end
     if info.maxSpeedAngle == nil or info.minSpeedAngle == nil then
-		CpUtil.infoImplement(self, "maxSpeedAngle or minSpeedAngle not found!")
+		CpShovelPositions.debug(self, "maxSpeedAngle or minSpeedAngle not found!")
 		return 
 	end
 
 	if shovelSpec.shovelNodes == nil then 
-		CpUtil.infoImplement(self, "Shovel nodes not found!")
+		CpShovelPositions.debug(self, "Shovel nodes not found!")
 		return 
 	end
 
 	if shovelSpec.shovelNodes[1] == nil then 
-		CpUtil.infoImplement(self, "Shovel nodes index 0 not found!")
+		CpShovelPositions.debug(self, "Shovel nodes index 0 not found!")
 		return 
 	end
 
 	if shovelSpec.shovelNodes[1].node == nil then 
-		CpUtil.infoImplement(self, "Shovel node not found!")
+		CpShovelPositions.debug(self, "Shovel node not found!")
 		return 
 	end
 	local _, dy, _ = localDirectionToWorld(info.node, 0, 0, 1)
@@ -417,109 +413,10 @@ function CpShovelPositions:getShovelData()
 	return angle, shovelSpec.shovelNodes[1].node, info.maxSpeedAngle, info.minSpeedAngle, factor
 end
 
-function CpShovelPositions:isCpShovelUnloadingRaycastAllowed()
-	return true
-end
 
---- Searches for unloading targets.
-function CpShovelPositions:cpSearchForShovelUnloadingObjectRaycast()
-	local spec = self.spec_cpShovelPositions
-	spec.currentObjectFound = nil
-	if not self:isCpShovelUnloadingRaycastAllowed()then
-		return
-	end
-	local rootVehicle = self:getRootVehicle()
-	if rootVehicle == nil or rootVehicle.getAIDirectionNode == nil then 
-		return
-	end
-	local angle, shovelNode, maxAngle, minAngle, factor = CpShovelPositions.getShovelData(self)
-	local node = rootVehicle:getAIDirectionNode()
-	local dirX, _, dirZ = localDirectionToWorld(shovelNode, 0, 0, 1)
-	local _, _, dz = localToLocal(shovelNode, node, 0, 0, 0)
-	local dirY = -5
-	for i=1, CpShovelPositions.MAX_RAYCAST_OFFSET do
-		local x, y, z = localToWorld(node, 0, CpShovelPositions.RAYCAST_OFFSET_HEIGHT, i + dz)
-		raycastAll(x, y, z, dirX, dirY, dirZ, "cpShovelUnloadingRaycastCallback", CpShovelPositions.RAYCAST_DISTANCE, self)
-		DebugUtil.drawDebugLine(x, y, z, x+dirX*CpShovelPositions.RAYCAST_DISTANCE, y+dirY*CpShovelPositions.RAYCAST_DISTANCE, z+dirZ*CpShovelPositions.RAYCAST_DISTANCE, 1, 0, 0)
-	end
-end
 
---- Raycast callback for searching of trailers/triggers.
-function CpShovelPositions:cpShovelUnloadingRaycastCallback(transformId, x, y, z, distance, nx, ny, nz, subShapeIndex, hitShapeId, isLast)
-	local spec = self.spec_cpShovelPositions
-	local object = g_currentMission:getNodeObject(transformId)
-	local trigger = g_triggerManager:getUnloadTriggerForNode(transformId)
-	--- Has the target already been hit ?
-	if not self:isCpShovelUnloadingRaycastAllowed() then
-		return false
+function CpShovelPositions.debug(implement, ...)
+	if CpShovelPositions.DEBUG then
+		CpUtil.infoImplement(implement, ...)
 	end
-	if spec.currentObjectFound then 
-		return false
-	end
-	local rootVehicle = self:getRootVehicle()
-	if trigger and trigger.getFillUnitIndexFromNode then
-		local fillUnitIndex = trigger:getFillUnitIndexFromNode(hitShapeId)
-		local fillType = self:getDischargeFillType(self:getCurrentDischargeNode())
-		if fillType ~= nil and fillUnitIndex ~= nil and trigger:getFillUnitSupportsToolTypeAndFillType(fillUnitIndex, ToolType.DISCHARGEABLE, fillType) then 
-			if trigger:getIsFillAllowedFromFarm(rootVehicle:getActiveFarm()) then 
-				CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "UnloadTrigger found!")
-				spec.currentObjectFound = {
-					object = trigger,
-					fillUnitIndex = trigger:getFillUnitIndexFromNode(hitShapeId),
-				}
-				return true
-			else 
-				CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "Not allowed to unload into!")
-			end
-		else 
-			CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "Fill type or tool type not supported!")
-		end
-	--is object a vehicle, trailer,...
-	elseif object and object:isa(Vehicle) then 
-		--check if the vehicle is stopped 
-		local rootVehicle = object:getRootVehicle()
-		if not AIUtil.isStopped(rootVehicle) then 
-			return false
-		end
-
-		--object supports filltype, bassicly trailer and so on
-		if object.getFillUnitSupportsToolType then
-			for fillUnitIndex, fillUnit in pairs(object:getFillUnits()) do
-				--object supports filling by shovel
-				local allowedToFillByShovel = object:getFillUnitSupportsToolType(fillUnitIndex, ToolType.DISCHARGEABLE)	
-				local fillType = self:getDischargeFillType(self:getCurrentDischargeNode())
-				--object supports fillType
-				local supportedFillType = object:getFillUnitSupportsFillType(fillUnitIndex,fillType)
-				if allowedToFillByShovel then 
-					CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "allowedToFillByShovel")
-					if supportedFillType then 
-						if object:getFillUnitFreeCapacity(fillUnitIndex, fillType, rootVehicle:getActiveFarm()) > 0 then 
-							if object:getIsFillAllowedFromFarm(rootVehicle:getActiveFarm()) then 
-								CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "valid trailer found!")
-								spec.currentObjectFound = {
-									object = object,
-									fillUnitIndex = fillUnitIndex
-								}
-								return true
-							else 
-								CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "Not allowed to unload into!")
-							end
-						else 
-							CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "No free capacity!")
-						end
-					else
-						CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "not  supportedFillType")
-					end
-				else
-					CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "not  allowedToFillByShovel")
-				end
-			end
-		else
-			CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "FillUnit not found!")
-		end
-	else 
-		--CpUtil.debugVehicle(CpDebug.DBG_SILO, rootVehicle, "Nothing found!")
-	end
-
-	return false
 end

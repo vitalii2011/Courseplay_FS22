@@ -147,7 +147,7 @@ function AIDriveStrategyShovelSiloLoader:onWaypointPassed(ix, course)
             local reverseCourse = Course.createFromTwoWorldPositions(self.vehicle, x, z, dx, dz, 
                 0, 0, 3, 3, true)
             self:startCourse(reverseCourse, 1)
-            self.state = self.states.WAITING_FOR_TRAILER
+            self.state = self.states.DRIVING_OUT_OF_SILO
         elseif self.state == self.states.DRIVING_OUT_OF_SILO then
             self.state = self.states.WAITING_FOR_TRAILER
         elseif self.state == self.states.DRIVING_TO_TRAILER then
@@ -194,6 +194,11 @@ function AIDriveStrategyShovelSiloLoader:getDriveData(dt, vX, vY, vZ)
             self:debug("End wall detected or bunker silo end is reached.")
             self.state = self.states.DRIVING_OUT_OF_SILO
         end
+        if self.shovelController:isFull() then 
+            self:debug("Shovel is full, starting to drive out of the silo.")
+            self.state = self.states.DRIVING_OUT_OF_SILO
+        end
+
     elseif self.state == self.states.DRIVING_OUT_OF_SILO then 
         self:setMaxSpeed(self.settings.bunkerSiloSpeed:getValue())
 
@@ -214,9 +219,10 @@ function AIDriveStrategyShovelSiloLoader:getDriveData(dt, vX, vY, vZ)
         end
     end
     if self.state.properties.shovelPosition then 
-        self.shovelController:moveShovelToPosition(self.state.properties.shovelPosition)
-        if self.state.properties.shovelMovingSpeed ~= nil then 
-            self:setMaxSpeed(self.state.properties.shovelMovingSpeed)
+        if not self.frozen and self.shovelController:moveShovelToPosition(self.state.properties.shovelPosition) then 
+            if self.state.properties.shovelMovingSpeed ~= nil then 
+                self:setMaxSpeed(self.state.properties.shovelMovingSpeed)
+            end
         end
     end
 
